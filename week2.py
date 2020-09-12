@@ -6,7 +6,7 @@ from Crypto.Cipher import AES
 import os
 
 def random_IV():
-    print(os.urandom(16))
+    return(os.urandom(16))
 
 def random_key():
     return os.urandom(32)
@@ -17,12 +17,32 @@ def bxor(b1, b2): # use xor for bytes
         result += bytes([b1 ^ b2])
     return result
 
-def CBC_encryption(key, msg):
-    
-    pass
+def CBC_encryption(msg, key = random_key()):
+    iv = random_IV()
+    msg = msg.encode('utf-8').hex()
+    msg = bytes.fromhex(msg)
+    blocks = [msg[i:i+16] for i in range(0, len(msg)-16, 16)]
+    extra = len(msg) % 16
+    pad_length = 16 - extra
+    pad = hex(pad_length)[2:]
+    if len(pad) == 1:
+        pad = "0" + pad
+    pad = pad * pad_length
+    blocks.append(msg[len(msg)-extra:])
+    ct = iv.hex()
+    cipher = AES.new(key, AES.MODE_ECB) 
+    for i in range(len(blocks)):
+        if i == len(blocks)-1:
+            block = bxor(blocks[i] + bytes.fromhex(pad), iv)
+        else:
+            block = bxor(blocks[i], iv)
+        c = cipher.encrypt(block)
+        iv = c
+        ct += c.hex()
+    return ct, key.hex()
 
 def CTR_encryption(key, msg):
-    # encrypt message
+    # need random 
     pass
 
 def CBC_decryption(key, ct):
@@ -73,6 +93,17 @@ def CTR_decryption(key, ct):
     return plaintext
 
 def main():
+
+    # My own encrpyt/decrypt to test encryption functions
+    cipher, k = CBC_encryption("My first encryption!")
+    print("Cipher:", cipher)
+    print("Plaintext:", CBC_decryption(k, cipher))
+
+    cipher2, k2 = CBC_encryption("A little longer message to test with a few more than 1 block of plaintext")
+    print("Cipher:", cipher2)
+    print("Plaintext:", CBC_decryption(k2, cipher2)) 
+
+    print()
 
     # Home work test cases for decryption:
     CBC_keys = ["140b41b22a29beb4061bda66b6747e14", "140b41b22a29beb4061bda66b6747e14"]
