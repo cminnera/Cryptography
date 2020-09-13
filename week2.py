@@ -23,12 +23,13 @@ def CBC_encryption(msg, key = random_key()):
     msg = bytes.fromhex(msg)
     blocks = [msg[i:i+16] for i in range(0, len(msg)-16, 16)]
     extra = len(msg) % 16
+    blocks.append(msg[len(msg)-extra:])
     pad_length = 16 - extra
     pad = hex(pad_length)[2:]
     if len(pad) == 1:
         pad = "0" + pad
     pad = pad * pad_length
-    blocks.append(msg[len(msg)-extra:])
+    
     ct = iv.hex()
     cipher = AES.new(key, AES.MODE_ECB) 
     for i in range(len(blocks)):
@@ -41,9 +42,25 @@ def CBC_encryption(msg, key = random_key()):
         ct += c.hex()
     return ct, key.hex()
 
-def CTR_encryption(key, msg):
-    # need random 
-    pass
+def CTR_encryption(msg, key = random_key()):
+    iv = random_IV()
+    msg = msg.encode('utf-8').hex()
+    msg = bytes.fromhex(msg)
+    blocks = [msg[i:i+16] for i in range(0, len(msg)-16, 16)]
+    extra = len(msg) % 16 
+    blocks.append(msg[len(msg)-extra:])
+
+    ct = iv.hex()
+    cipher = AES.new(key, AES.MODE_ECB) 
+    for i in range(len(blocks)):
+        c = cipher.encrypt(iv)
+        c = bxor(c, blocks[i])
+        ct += c.hex()
+        iv = int.from_bytes(iv, 'big')
+        iv += 1
+        iv = iv.to_bytes(16, 'big')
+        
+    return ct, key.hex()
 
 def CBC_decryption(key, ct):
     ct = bytes.fromhex(ct)
@@ -101,7 +118,17 @@ def main():
 
     cipher2, k2 = CBC_encryption("A little longer message to test with a few more than 1 block of plaintext")
     print("Cipher:", cipher2)
-    print("Plaintext:", CBC_decryption(k2, cipher2)) 
+    print("Plaintext:", CBC_decryption(k2, cipher2))
+
+    print()
+
+    cipher, k = CTR_encryption("My first encryption!")
+    print("Cipher:", cipher)
+    print("Plaintext:", CTR_decryption(k, cipher))
+
+    cipher2, k2 = CTR_encryption("A little longer message to test with a few more than 1 block of plaintext")
+    print("Cipher:", cipher2)
+    print("Plaintext:", CTR_decryption(k2, cipher2))  
 
     print()
 
